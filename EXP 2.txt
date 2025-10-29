@@ -1,0 +1,52 @@
+Exp 2 -To build your application using AWS CodeBuild and Deploy on S3 / SEBS using AWS Code Pipeline.
+
+Phase 1: Create S3 Buckets 🧺
+
+1) Go to S3: Search S3 in the AWS Console -> Click S3 service.
+
+2) Create Artifact Bucket:
+
+Click Create bucket.
+Name: yourname-store-artifacts 
+Region: Select one (e.g., us-east-1).
+Public Access: Keep default 
+Click Create bucket.
+
+3) Create Deployment Bucket:
+
+Click Create bucket.
+Name: yourname-deployment-bucket-pwa 
+Region: Same region as above.
+Public Access: UNCHECK "Block all public access" -> Check the acknowledgment box.
+Click Create bucket.
+
+Verify: You should see both buckets listed.
+
+
+Phase 2: Create CodeBuild Project 🔨
+
+1) Go to CodeBuild: Search CodeBuild -> Click CodeBuild service.
+
+2) Create Project: Click Create build project.
+
+3) Project Name: PWA-CodeBuild (or your chosen name).
+
+4) Source: Provider GitHub -> Public repository (or Repository in my GitHub account if using OAuth ) -> Repository URL. 
+
+5) Environment:
+Environment image: Keep "Managed image".
+Operating System: Select "Amazon Linux 2" (or similar standard Linux OS offered).
+Runtime(s): Select "Standard".
+Image: Choose a standard image version (e.g., aws/codebuild/amazonlinux2-x86_64-standard:4.0 or similar latest standard).
+Privileged: Keep unchecked unless required by buildspec.
+Service role: Select "New service role". It will auto-generate a role name (e.g., codebuild-PWA-CodeBuild-service-role).
+
+6) Buildspec: Use a buildspec file.
+
+7) Artifacts: No artifacts.
+
+8) Logs: Keep CloudWatch logs checked.
+
+9) Create: Click Create build project.
+
+Verify: The CodeBuild project page should load, showing the configuration.

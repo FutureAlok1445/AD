@@ -1,0 +1,17 @@
+# Step 1: Update the system packages
+sudo apt update
+
+# Step 2: Install wget and unzip utilities
+sudo apt install -y wget unzip
+
+# Step 3: Download the Terraform package from HashiCorp
+wget https://releases.hashicorp.com/terraform/1.13.4/terraform_1.13.4_linux_amd64.zip
+
+# Step 4: Unzip the downloaded file
+unzip terraform_1.13.4_linux_amd64.zip
+
+# Step 5: Move the Terraform binary to /usr/local/bin
+sudo mv terraform /usr/local/bin/
+
+# Step 6: Verify the installation
+terraform -v

@@ -1,0 +1,133 @@
+Exp 3 - To deploy sample application on EC2 instance using AWS Code Deploy.
+
+Phase 1: Create S3 Buckets 🧺
+
+1) Go to S3: Search S3 in the AWS Console -> Click S3 service.
+
+2) Create Artifact Bucket:
+
+Click Create bucket.
+Name: yourname-store-artifacts 
+Region: Select one (e.g., us-east-1).
+Public Access: Keep default 
+Click Create bucket.
+
+3) Create Deployment Bucket:
+
+Click Create bucket.
+Name: yourname-deployment-bucket-pwa 
+Region: Same region as above.
+Public Access: UNCHECK "Block all public access" -> Check the acknowledgment box.
+Click Create bucket.
+
+Verify: You should see both buckets listed.
+
+
+Phase 2: Create CodeBuild Project 🔨
+
+1) Go to CodeBuild: Search CodeBuild -> Click CodeBuild service.
+
+2) Create Project: Click Create build project.
+
+3) Project Name: PWA-CodeBuild (or your chosen name).
+
+4) Source: Provider GitHub -> Public repository (or Repository in my GitHub account if using OAuth ) -> Repository URL. 
+
+5) Environment:
+Environment image: Keep "Managed image".
+Operating System: Select "Amazon Linux 2" (or similar standard Linux OS offered).
+Runtime(s): Select "Standard".
+Image: Choose a standard image version (e.g., aws/codebuild/amazonlinux2-x86_64-standard:4.0 or similar latest standard).
+Privileged: Keep unchecked unless required by buildspec.
+Service role: Select "New service role". It will auto-generate a role name (e.g., codebuild-PWA-CodeBuild-service-role).
+
+6) Buildspec: Use a buildspec file.
+
+7) Artifacts: No artifacts.
+
+8) Logs: Keep CloudWatch logs checked.
+
+9) Create: Click Create build project.
+
+Verify: The CodeBuild project page should load, showing the configuration.
+
+
+Phase 3 : Create in Pipeline
+1. Create the Pipeline ➡️
+Go to CodePipeline: Search and open the CodePipeline service.
+Start Creation: Click Create pipeline.
+
+Pipeline Settings:
+Name: Enter a name (e.g., pwa-pipeline).
+Role: Choose New service role.
+Artifact Store: Select Custom location -> Choose your artifact S3 bucket (e.g., yourname-store-artifacts).
+Click Next.
+
+Source Stage:
+
+Provider: GitHub (Version 1).
+Connect/Select your GitHub account.
+
+Repo: iamdkcoder/Car-pwa-deploy-on-aws (or your repo).
+
+Branch: main (or master).
+Keep GitHub webhooks.
+
+Click Next.
+
+Build Stage:
+Provider: AWS CodeBuild.
+Project name: Select your CodeBuild project (e.g., PWA-CodeBuild).
+
+Click Next.
+
+Deploy Stage:
+Provider: Amazon S3.
+
+Bucket: Select your deployment S3 bucket (e.g., yourname-deployment-bucket-pwa).
+
+CHECK the box "Extract file before deploy".
+
+Click Next.
+
+Review & Create: Check settings -> Click Create pipeline.
+
+2. Fix Build Permissions 🛠️
+Wait for Build Fail: The pipeline will run, and the Build stage will likely fail.
+
+Find Build Role: In the failed Build stage -> Details -> Build details tab -> Click the Service role link (opens IAM).
+
+Add S3 Permissions: In IAM -> Permissions tab -> Add permissions -> Attach policies -> Find and check AmazonS3FullAccess -> Attach policies.
+
+Retry Build: Go back to CodePipeline -> Click Retry on the failed Build stage. Wait for Build and Deploy to succeed.
+
+3. Configure S3 for Website Hosting 🌐
+Go to Deployment Bucket: Navigate to S3 -> Click your deployment bucket name.
+
+Enable Hosting: Properties tab -> Scroll to Static website hosting -> Edit -> Select Enable -> Index document: index.html -> Save changes.
+
+Copy Endpoint: Note the Bucket website endpoint URL provided.
+
+Set Public Policy: Permissions tab -> Bucket policy -> Edit. Paste the policy below, replacing YOUR_DEPLOYMENT_BUCKET_NAME with your actual bucket name :
+
+JSON
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "PublicReadGetObject",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::YOUR_DEPLOYMENT_BUCKET_NAME/*" 
+        }
+    ]
+}
+Save Policy: Click Save changes.
+
+4. Verify ✅
+Open Website: Paste the S3 Bucket website endpoint URL into your browser.
+
+
+Check: The website should load correctly .

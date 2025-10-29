@@ -1,0 +1,20 @@
+sudo apt-get update
+sudo apt-get install docker.io
+sudo docker run -d -p 8080:8080 -p 50000:50000 -v jenkins_home:/var/jenkins_home jenkins/jenkins:lts-jdk17
+sudo docker run -d -p 9000:9000 SonarQube
+- create a GitHub repo with a simple python program
+- setup SonarQube (admin admin default creds)
+- install SonarQube scanner plugin in Jenkins
+- configure system in Jenkins (add SonarQube url)
+- new job in Jenkins
+- create a pipeline
+- code:
+node
+{
+    stage('Cloning From Git'){
+        git branch: 'main', credentialsId: 'GIT_REPO', url: 'https://github.com/vishal003/jenkins-sonarqube.git'
+    }
+}
+- apply and save
+- build now
+- console output

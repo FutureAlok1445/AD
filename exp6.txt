@@ -1,0 +1,146 @@
+# EXPERIMENT 06 
+# Build, change, destroy AWS infra using Terraform
+
+
+# 1) Install AWS CLI v2 on Linux 
+sudo apt-get install curl
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+sudo apt install -y unzip
+sudo unzip awscliv2.zip
+sudo ./aws/install
+
+# verify
+aws --version    #shows: aws-cli/2.1.29 ...
+
+# 2) Create an AWS access key in the AWS Console (My Security Credentials)
+#    (Download the Access Key ID and Secret Access Key to your local machine.)
+#    Then configure AWS CLI:
+
+aws configure
+# Provide: AWS Access Key ID, AWS Secret Access Key, Default region name, Default output format
+
+# 3) Create project directory for Terraform 
+mkdir -p project-terraform
+cd project-terraform
+
+# 4) Create variables.tf 
+sudo nano variables.tf
+
+variable "aws_region" {
+  description = "AWS region to create resources in"
+  default     = "ap-south-1"
+}
+
+variable "key_name" {
+  description = "Name of EC2 key pair (create this in AWS console)"
+  default     = "terraform"
+}
+
+variable "instance_type" {
+  description = "EC2 instance type"
+  default     = "t2.micro"
+}
+
+
+# 5) Create main.tf 
+sudo nano main.tf
+# -------------------------------
+# Provider Configuration
+# -------------------------------
+provider "aws" {
+  region = var.aws_region
+}
+
+# -------------------------------
+# Security Group for Jenkins
+# -------------------------------
+resource "aws_security_group" "security_jenkins_port" {
+  name        = "security_jenkins_port"
+  description = "Security group for Jenkins server"
+
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "security_jenkins_port"
+  }
+}
+
+# -------------------------------
+# Get Latest Ubuntu 22.04 AMI (Region-Specific)
+# -------------------------------
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"] # Canonical (Ubuntu)
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
+  }
+}
+
+# -------------------------------
+# EC2 Instance for Jenkins
+# -------------------------------
+resource "aws_instance" "myFirstInstance" {
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = var.instance_type
+  key_name      = var.key_name
+
+  security_groups = [
+    aws_security_group.security_jenkins_port.name
+  ]
+
+  tags = {
+    Name = "jenkins_instance"
+  }
+}
+
+# -------------------------------
+# Elastic IP for the Instance
+# -------------------------------
+resource "aws_eip" "myFirstInstance" {
+  instance = aws_instance.myFirstInstance.id
+
+  tags = {
+    Name = "myFirstInstanceEIP"
+  }
+}
+
+
+
+# 6) Initialize Terraform (downloads providers)
+terraform init
+
+# 7) Validate the configuration (syntax)
+terraform validate
+
+# 8) Create an execution plan 
+terraform plan 
+# 9) Apply the plan 
+terraform apply 
+# Enter: yes
+
+# 10) Verify created resources in AWS Console (EC2 -> Instances and Security Groups)
+#     You should see instance Name = jenkins_instance and the security group security_jenkins_port.
+
+# 11) To destroy (delete) all resources created by Terraform 
+terraform destroy -auto-approve

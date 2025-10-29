@@ -1,0 +1,17 @@
+- create a lambda function with runtime environment as python
+- lambda function code:
+import json
+def lambda_handler(event, context):
+	first_number = 100
+	second_number = 200
+	sum = first_number + second_number
+	return sum
+- empty the event json
+- deploy & test
+- lambda function code:
+lambda_handler (event, context):
+	if event["name"] == "aadesh":
+		return "Hello, Aadesh"
+	return "Hello"
+- in event json : { "name" : "aadesh" }
+- deploy & test 

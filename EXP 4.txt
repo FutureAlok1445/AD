@@ -1,0 +1,113 @@
+1. Prepare AWS Resources ☁️
+Go to EC2: Search EC2 in AWS Console -> Click EC2 service.
+
+Security Group Prep:
+Navigate to Security Groups (left pane).
+Delete any unused, non-default groups.
+Locate the default security group
+
+Launch Instances: Click Launch instances.
+Number: 2.
+Name: Name them later (e.g., Master, Worker-node).
+OS: Select Ubuntu (e.g., Ubuntu Server 22.04 LTS).
+Instance Type: Select t2.micro (Free tier eligible).
+Key Pair: Create a new key pair (e.g., exp4-key), select .pem format, and download the file securely.
+
+Network Settings (Security Group):
+Here security group is launch wizard-1 Now go to security group from left pane
+Click on Security group id of Launch wizard-1
+Click Edit inbound rule
+Remove existing rules (HTTP/HTTPS/SSH).
+Click Add security group rule.
+Type: All traffic.
+Source: Anywhere (0.0.0.0/0).
+Note: This is insecure for production but simplifies the lab setup .
+
+
+Launch: Click Launch instance. Wait for both instances to show Running state.
+
+Name Instances: Select each instance and name them Master and Worker-node.
+
+2. Prepare Both Nodes (Master & Worker) ⚙️
+Connect: Connect to both the Master and Worker instances (using EC2 Instance Connect or SSH with your .pem key).
+
+Set Hostnames:
+On Master: sudo hostnamectl set-hostname master-node  -> exit 
+On Worker: sudo hostnamectl set-hostname worker1  -> exit 
+
+=== RUN ON BOTH INSTANCES ===
+sudo apt-get update
+sudo apt-get install docker.io -y => sudo systemctl enable docker => sudo systemctl status docker => sudo systemctl start docker
+sudo apt-get update
+sudo apt-get install -y apt-transport-https ca-certificates curl gpg
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.34/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+sudo apt-get update
+sudo apt-get install -y kubelet kubeadm kubectl
+sudo apt-mark hold kubelet kubeadm kubectl
+Disable Swap (Run on BOTH): sudo swapoff -a
+=== RUN ON BOTH INSTANCES ===
+
+3) Configure Docker Cgroup Driver (Run on BOTH) 🐧
+(Only if kubeadm init later fails with "kubelet isn't running or healthy").
+
+Create/Edit Docker config: sudo nano /etc/docker/daemon.json.
+Add content:
+JSON
+
+{
+  "exec-opts": ["native.cgroupdriver=systemd"]
+}
+
+.Save and exit (CTRL+O, Enter, CTRL+X).
+
+Reload & Restart:
+sudo systemctl daemon-reload.
+sudo systemctl restart docker.
+sudo systemctl restart kubelet.
+
+Reset Kubeadm (If you ran init/join before): sudo kubeadm reset
+
+=== RUN ON MASTER ===
+sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=all
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
+=== RUN ON MASTER ===
+Copy Join Command: From the output of kubeadm init, copy the entire kubeadm join ... command (including token and hash). You'll need this for the worker .
+
+Join Worker Node 
+Run Join Command (ONLY on Worker):
+Paste the kubeadm join ... command copied from the master.
+Add sudo at the beginning.
+Add --ignore-preflight-errors=all at the end if you encountered cgroup issues earlier. 
+Example: 
+sudo kubeadm join <master_ip>:6443 --token <token> --discovery-token-ca-cert-hash sha256:<hash> --ignore-preflight-errors=all
+
+- reboot both instances
+- kubectl get pods --all-namespaces
+
+kubectl get nodes
+
+4) Deployment Service
+
+sudo nano deploy.yaml then Save and exit.
+sudo cat deploy.yaml
+Apply Deployment (on Master): kubectl create -f deploy.yaml
+Check Deployment (on Master): kubectl get deploy
+Expose Service (on Master): kubectl expose deployment.apps/nginx-deployment -- type="LoadBalancer"
+kubectl get svc -> here we will get port of nginx like 80:31825/TCP
+
+Go to instance,master select public ipv4
+
+Open your browser and go to http://<WORKER_NODE_PUBLIC_IP>:<NODE_PORT>
+(e.g., http://52.87.162.37:31825)
+
+
+
+
+
+
+
+

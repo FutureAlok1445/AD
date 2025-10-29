@@ -1,0 +1,17 @@
+sudo apt-get update
+sudo apt-get install docker.io -y
+sudo mkdir -p /opt/nagios/etc
+sudo mkdir -p /opt/nagios/var
+sudo mkdir -p /opt/nagios/log
+sudo mkdir -p /opt/nagios/plugins
+sudo chown -R 1000:1000 /opt/nagios
+docker run -d \
+  --name nagios \
+  -p 8080:80 \
+  -v /opt/nagios/etc:/opt/nagios/etc \
+  -v /opt/nagios/var:/opt/nagios/var \
+  -v /opt/nagios/log:/opt/nagios/log \
+  -v /opt/nagios/plugins:/opt/nagios/plugins \
+  jasonrivers/nagios:latest
+
+default creds (nagiosadmin - nagios)
