@@ -1,17 +1,54 @@
-- create a lambda function with runtime environment as python
-- lambda function code:
+1. Create the Lambda Function ☁️
+Go to Lambda: In the AWS search bar, type Lambda -> Click the Lambda service.
+Start Creation: Click Create function.
+
+Configure:
+Select Author from scratch.
+Function name: Enter a name (e.g., myaloklamda) .
+Runtime: Select Python (e.g., Python 3.12 or similar).
+Architecture: Keep x86_64 (default).
+Permissions: Leave "Create a new role with basic Lambda permissions" (default).
+Create: Click Create function.
+
+2. Test 1: Simple Sum Calculation 🧮
+Add Code: In the Code source editor, replace the default code with this:
+
+Python
 import json
 def lambda_handler(event, context):
-	first_number = 100
-	second_number = 200
-	sum = first_number + second_number
-	return sum
-- empty the event json
-- deploy & test
-- lambda function code:
-lambda_handler (event, context):
-	if event["name"] == "aadesh":
-		return "Hello, Aadesh"
-	return "Hello"
-- in event json : { "name" : "aadesh" }
-- deploy & test 
+    first_number = 100
+    second_number = 200
+    sum = first_number + second_number
+    return sum
+
+Deploy: Click the Deploy button (above the code editor).
+Configure Test Event:
+Go to the Test tab.
+
+Select Create new event.
+Event name: testSumEvent.
+Event JSON: Delete the existing content and leave only empty braces: {}.
+Click Save.
+
+Run Test: Click the Test button.
+Verify: Look at the Execution results tab. The Response section should show the number 300.
+
+3. Test 2: Process Event Input 🗣️
+
+Modify Code: Go back to the Code tab. Replace the code with this:
+Python
+import json
+def lambda_handler(event, context):
+    if event.get("name") == "aadesh":
+        return "Hello, Aadesh"
+    return "Hello"
+
+Deploy: Click Deploy.
+
+Configure Test Event:
+In the Test tab, click the dropdown menu (it might say testSumEvent) and select Configure test events.
+Select your testSumEvent.
+Event JSON: Replace the {} with: { "name" : "aadesh" }.
+Click Save.
+Run Test: Click the Test button.
+Verify: Look at the Execution results tab. The Response should show "Hello, Aadesh". You can also check the logs in the Monitor tab under CloudWatch logs.

@@ -1,23 +1,76 @@
-- create a s3 bucket with default settings
-- iam -> roles 
-- create a role -> aws service option -> use case as lambda -> next
-- S3 Full Access, CloudWatch Full Access, Lambda Full Access Permissions
-- Give a role name and create
-- create a lambda function with runtime environment as nodejs
-- change default execution role -> use an existing -> the role we created earlier -> create function
-- go to configuration of lambda function -> trigger -> s3 -> bucket name -> event type (all object create event) -> suffix (.jpg) -> create
-- lambda function code:
+1. Create S3 Bucket 🧺
+Go to S3: Search S3 in the AWS Console -> Click S3 service.
+Create Bucket: Click Create bucket.
+Configure:
+Name: yourname-lambda-trigger-bucket (must be globally unique).
+Region: Select one (e.g., us-east-1).
+Settings: Keep all defaults (Block all public access ON).
+Create: Click Create bucket.
+
+2. Create IAM Role 🔐
+Go to IAM: Search IAM -> Click IAM service.
+Go to Roles: Click Roles in the left pane.
+Create Role: Click Create role.
+Configure:
+Trusted entity: AWS service.
+Use case: Lambda .
+Click Next.
+
+Add Permissions:
+Search for and check the box for AmazonS3FullAccess 
+Search for and check the box for CloudWatchFullAccess .
+Search for and check the box for AWSLambdaFullAccess .
+Click Next.
+Name & Create:
+Role name: lambda-s3-trigger-role (or a name you'll remember).
+Review the settings -> Click Create role.
+
+3. Create Lambda Function ☁️
+Go to Lambda: Search Lambda -> Click Lambda service.
+Create Function: Click Create function.
+Configure:
+Select Author from scratch.
+Function name: my-s3-logger-function (or myaloklamda).
+Runtime: Node.js (e.g., Node.js 20.x or 22.x).
+Architecture: x86_64.
+Permissions: Expand Change default execution role -> Select Use an existing role -> Choose the lambda-s3-trigger-role you just created .
+Create: Click Create function.
+
+4. Add S3 Trigger ⚡
+Add Trigger: In your new function's main page, click + Add trigger .
+Configure:
+Source: S3.
+Bucket: Select the S3 bucket you created in Step 1 (yourname-lambda-trigger-bucket) .
+Event types: All object create events .
+Suffix: Enter .jpg (to only trigger for jpeg images) 
+Acknowledgment: Check the box acknowledging recursive invocation recommendations .
+Add: Click Add.
+
+5. Add Lambda Code 📝
+Go to Code: Select the Code tab (in your Lambda function).
+Edit Code: In the index.mjs (or index.js) editor, paste this exact code :
+JavaScript
+
 export const handler = async (event, context) => {
   console.log("Incoming Event:", event);
 
   const bucket = event.Records[0].s3.bucket.name;
-  const filename = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, ''));
-
+  const filename = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, ' '));
   const message = `An Image has been added - ${bucket} -> ${filename}`;
   console.log(message);
 
   return message;
 };
-- deploy
-- upload a .jpg in s3
-- navigate to cloudwatch - log groups - see the log
+Deploy: Click the Deploy button. Wait for it to save.
+
+6. Test and Verify ✅
+Go to S3: Navigate back to your S3 bucket.
+Upload File: Click Upload -> Add files -> Select any .jpg image from your computer.
+Verify Upload: Click Upload. Wait for it to complete.
+Go to CloudWatch: Search CloudWatch -> Click CloudWatch service.
+Check Logs:
+In the left pane, click Logs -> Log groups.
+Find the log group for your function (it will be named /aws/lambda/my-s3-logger-function or similar).
+Click the log group name.
+Click the most recent log stream.
+You should see a log entry with your message: An Image has been added - yourname-lambda-trigger-bucket -> yourimage.jpg .
