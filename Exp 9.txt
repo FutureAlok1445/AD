@@ -1,0 +1,62 @@
+1. Install Dependencies 📦
+Update & Install: Run this command to get all required packages (Apache, PHP, build tools, etc.):
+Bash
+sudo apt-get update
+sudo apt-get install -y wget build-essential unzip openssl libssl-dev \
+apache2 php libapache2-mod-php php-gd libgd-dev \
+daemon autoconf gcc make
+
+2. Create Nagios User & Group 👤
+Create User: sudo adduser nagios (You will be prompted to set a password).
+Create Group: sudo groupadd nagcmd.
+Add Users to Group:
+sudo usermod -aG nagcmd nagios.
+sudo usermod -aG nagcmd www-data.
+
+3. Download & Install Nagios Core 🖥️
+Go to Source Directory: cd /opt (or /tmp).
+Download: sudo wget https://assets.nagios.com/downloads/nagioscore/releases/nagios-4.4.3.tar.gz (or a similar version like 4.4.6).
+Extract: sudo tar xzf nagios-*.tar.gz.
+Enter Directory: cd nagios-4.4.3 (or the version you downloaded).
+Configure: sudo ./configure --with-command-group=nagcmd.
+Compile: sudo make all.
+
+Install: Run these make commands one by one :
+Bash
+sudo make install
+sudo make install-init
+sudo make install-daemoninit
+sudo make install-config
+sudo make install-commandmode
+sudo make install-webconf
+
+4. Download & Install Nagios Plugins 🔌
+Go to Source Directory: cd /opt (or /tmp).
+Download: sudo wget https://nagios-plugins.org/download/nagios-plugins-2.2.1.tar.gz (or a similar version).
+Extract: sudo tar xzf nagios-plugins-*.tar.gz.
+Enter Directory: cd nagios-plugins-2.2.1 (or the version you downloaded).
+Configure: sudo ./configure --with-nagios-user=nagios --with-nagios-group=nagios --with-openssl .
+Compile: sudo make.
+Install: sudo make install.
+
+5. Configure Apache Web Server 🌐
+Create Web User: Create an admin user for the Nagios web interface.
+sudo htpasswd -c /usr/local/nagios/etc/htpasswd.users nagiosadmin.
+Enter a password (e.g., 123456 or your choice) when prompted.
+Enable Modules:
+sudo a2enconf nagios.
+sudo a2enmod cgi rewrite.
+Restart Apache: sudo systemctl restart apache2.
+
+6. Start Nagios & Verify ✅
+Verify Config: Check for errors before starting:
+/usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg.
+Start Nagios: sudo systemctl start nagios.
+Enable on Boot: sudo systemctl enable nagios.
+
+7. Access Web Interface 🖥️
+Open Browser: Go to http://<your-server-ip>/nagios/.
+Log In: Use the credentials you created in Step 5:
+Username: nagiosadmin
+Password: (the password you set).
+Verify: You should see the Nagios Core dashboard .
