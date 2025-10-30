@@ -1,20 +1,92 @@
-sudo apt-get update
-sudo apt-get install docker.io
+1. Prerequisites 🐳
+sudo apt-get update.
+sudo apt-get install -y docker.io.
+
+2. Run Jenkins & SonarQube Containers 🚀
+Start Jenkins:
+Bash
 sudo docker run -d -p 8080:8080 -p 50000:50000 -v jenkins_home:/var/jenkins_home jenkins/jenkins:lts-jdk17
-sudo docker run -d -p 9000:9000 SonarQube
-- create a GitHub repo with a simple python program
-- setup SonarQube (admin admin default creds)
-- install SonarQube scanner plugin in Jenkins
-- configure system in Jenkins (add SonarQube url)
-- new job in Jenkins
-- create a pipeline
-- code:
-node
-{
-    stage('Cloning From Git'){
-        git branch: 'main', credentialsId: 'GIT_REPO', url: 'https://github.com/vishal003/jenkins-sonarqube.git'
+
+Start SonarQube:
+Bash
+sudo docker run -d -p 9000:9000 sonarqube
+
+3. Initial Jenkins Setup 🔧
+Get Jenkins Password:
+sudo docker ps.
+sudo docker exec -it <container_id> cat /var/jenkins_home/secrets/initialAdminPassword .
+Unlock Jenkins:
+Open your browser to http://<your-ip-address>:8080.
+Paste the password and click Continue.
+
+Install Plugins: Click Install suggested plugins.
+Create Admin User: Fill out the form to create your admin user.
+Instance URL: Confirm the URL (http://<your-ip-address>:8080/) and finish.
+
+4. Initial SonarQube Setup 📊
+Access SonarQube: Open your browser to http://<your-ip-address>:9000.
+Log In: Use default credentials: Username admin, Password admin.
+Change Password: You will be prompted to change the password (e.g., set to 123456 or your choice).
+
+5. Configure Jenkins-SonarQube Integration 🔗
+Install Plugin:
+In Jenkins: Manage Jenkins -> Plugins -> Available plugins.
+Search for SonarQube Scanner and install it.
+Add SonarQube Server:
+Manage Jenkins -> Configure System -> SonarQube servers.
+Click Add SonarQube.
+Name: SonarQube (or any name).
+Server URL: http://<your-ip-address>:9000 (Use your IP, not localhost).
+Click Apply.
+
+Add SonarQube Scanner Tool:
+Manage Jenkins -> Global Tool Configuration -> SonarQube Scanner.
+Click Add SonarQube Scanner.
+Name: SonarQube (This name must match the one used in the pipeline script).
+Check Install automatically -> Install from Maven Central.
+Click Save.
+
+6. Create & Run Jenkins Pipeline 🔄
+
+Prerequisite: Have a GitHub repository ready (like https://github.com/vishal003/jenkins-sonarqube).
+Create Job:
+Jenkins Dashboard -> New Item.
+Enter a name (e.g., SAST-Pipeline) -> Select Pipeline -> Click OK.
+Add Pipeline Script:
+Scroll down to the Pipeline section.
+Paste the script below :
+Important:
+Update the credentialsId if you use private Git repo. Use '' for public.
+Update the url to your GitHub repo.
+Update sonar.login and sonar.password to your SonarQube credentials (e.g., admin, 123456).
+Update sonar.projectBaseDir with your Jenkins job name (e.g., SAST-Pipeline).
+Update sonar.host.url to your SonarQube URL.
+
+node {
+    stage('Cloning from GIT') {
+        git branch: 'main', credentialsId: '', url: 'https://github.com/vishal003/jenkins-sonarqube.git'
+        // For public repo, credentialsId can be empty string ''
+    }
+    stage('SonarQube Analysis') {
+        // 'SonarQube' must match the tool name in Global Tool Configuration
+        def scannerHome = tool 'SonarQube' 
+        withSonarQubeEnv('SonarQube') { // 'SonarQube' must match the server name in Configure System
+            sh """
+            ${scannerHome}/bin/sonar-scanner \
+            -D sonar.projectVersion=1.0-SNAPSHOT \
+            -D sonar.login=admin \
+            -D sonar.password=123456 \
+            -D sonar.projectBaseDir=/var/lib/jenkins/workspace/SAST-Pipeline \
+            -D sonar.projectKey=my-app1 \
+            -D sonar.language=java \
+            -D sonar.sources=project/src/main/java \
+            -D sonar.host.url=http://<your-ip-address>:9000/
+            """
+        }
     }
 }
-- apply and save
-- build now
-- console output
+
+Save & Build: Click Save, then Build Now.
+Verify:
+Check the Console Output in Jenkins for the build status.
+Go to your SonarQube dashboard (http://<your-ip-address>:9000) to see the new project (my-app1) and its SAST analysis report.
